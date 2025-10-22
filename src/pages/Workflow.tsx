@@ -44,7 +44,7 @@ const Workflow = () => {
       <div className="mb-8 animate-fade-in-up">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-4xl font-bold mb-2 gradient-primary bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold mb-2 text-foreground">
               工作流管理
             </h1>
             <p className="text-muted-foreground">创建和管理自动化的AI创作工作流</p>

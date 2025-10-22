@@ -7,14 +7,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { 
   Send, Upload, Download, Save, RefreshCw, History, 
-  Wifi, Database, Sparkles, Plus, X, ChevronLeft, ChevronRight, Loader2, Bot, User
+  Wifi, Database, Sparkles, Plus, X, ChevronLeft, ChevronRight, Loader2, Bot, User,
+  Search, Settings, FileText, MessageSquare, Zap, Star, Clock, Filter, Info
 } from "lucide-react";
 import { agents } from "@/data/agents";
 import { apiService, StreamEvent } from "@/services/api";
 import { handleApiError, handleNetworkError, getUserFriendlyMessage } from "@/utils/errorHandler";
 import { LoadingSkeleton } from "@/components/ui/skeleton";
+import SystemStatus from "@/components/SystemStatus";
+import AgentDetails from "@/components/AgentDetails";
 
 interface Message {
   id: string;
@@ -34,6 +38,9 @@ const Workspace = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [currentStreamMessage, setCurrentStreamMessage] = useState<string>('');
+  const [agentSearchQuery, setAgentSearchQuery] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [showAgentDetails, setShowAgentDetails] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const toggleAgent = (agentId: string) => {
@@ -43,6 +50,28 @@ const Workspace = () => {
         : [...prev, agentId]
     );
   };
+
+  // 过滤智能体
+  const filteredAgents = agents.filter(agent => {
+    const matchesCategory = selectedCategory === "all" || agent.category === selectedCategory;
+    const matchesSearch = agentSearchQuery === "" || 
+      agent.name.toLowerCase().includes(agentSearchQuery.toLowerCase()) ||
+      agent.description.toLowerCase().includes(agentSearchQuery.toLowerCase()) ||
+      agent.capabilities.some(cap => cap.toLowerCase().includes(agentSearchQuery.toLowerCase()));
+    return matchesCategory && matchesSearch;
+  });
+
+  // 智能体分类
+  const agentCategories = [
+    { id: "all", name: "全部", icon: Sparkles },
+    { id: "creation", name: "创作类", icon: FileText },
+    { id: "evaluation", name: "评估分析类", icon: Star },
+    { id: "workflow", name: "工作流类", icon: Zap },
+    { id: "professional", name: "专业分析类", icon: Settings },
+    { id: "information", name: "信息处理类", icon: Database },
+    { id: "quality", name: "质量控制类", icon: Filter },
+    { id: "core", name: "核心编排类", icon: MessageSquare },
+  ];
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -165,41 +194,102 @@ const Workspace = () => {
               <Sparkles className="h-5 w-5 text-primary" />
               选择智能体
             </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[600px] pr-4">
-              <div className="space-y-2">
-                {agents.map(agent => (
-                  <div
-                    key={agent.id}
-                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover-lift ${
-                      selectedAgents.includes(agent.id)
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:border-primary/50"
-                    }`}
-                    onClick={() => toggleAgent(agent.id)}
+            
+            {/* 搜索和分类过滤器 */}
+            <div className="space-y-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input
+                  placeholder="搜索智能体..."
+                  value={agentSearchQuery}
+                  onChange={(e) => setAgentSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              
+              <div className="flex flex-wrap gap-1">
+                {agentCategories.map(category => (
+                  <Button
+                    key={category.id}
+                    variant={selectedCategory === category.id ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setSelectedCategory(category.id)}
+                    className="text-xs"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm mb-1">{agent.name}</div>
-                        <div className="text-xs text-muted-foreground line-clamp-2">
-                          {agent.description}
+                    <category.icon className="h-3 w-3 mr-1" />
+                    {category.name}
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent>
+            <ScrollArea className="h-[500px] pr-4">
+              <div className="space-y-2">
+                {filteredAgents.length > 0 ? (
+                  filteredAgents.map(agent => (
+                    <div
+                      key={agent.id}
+                      className={`p-3 rounded-lg border-2 cursor-pointer transition-all hover-lift ${
+                        selectedAgents.includes(agent.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-border hover:border-primary/50"
+                      }`}
+                      onClick={() => toggleAgent(agent.id)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div 
+                          className="flex items-start gap-3 flex-1 cursor-pointer"
+                          onClick={() => setShowAgentDetails(agent.id)}
+                        >
+                          <div className="text-2xl mt-1">{agent.icon}</div>
+                          <div className="flex-1">
+                            <div className="font-medium text-sm mb-1">{agent.name}</div>
+                            <div className="text-xs text-muted-foreground line-clamp-2">
+                              {agent.description}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowAgentDetails(agent.id);
+                            }}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Info className="h-3 w-3" />
+                          </Button>
+                          <Checkbox 
+                            checked={selectedAgents.includes(agent.id)}
+                            className="ml-2"
+                            onClick={(e) => e.stopPropagation()}
+                          />
                         </div>
                       </div>
-                      <Checkbox 
-                        checked={selectedAgents.includes(agent.id)}
-                        className="ml-2"
-                      />
+                      <div className="flex gap-1 mt-2">
+                        {agent.capabilities.slice(0, 2).map((cap, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-xs">
+                            {cap}
+                          </Badge>
+                        ))}
+                        {agent.capabilities.length > 2 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{agent.capabilities.length - 2}
+                          </Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex gap-1 mt-2">
-                      {agent.tags.map((tag, idx) => (
-                        <Badge key={idx} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Search className="h-8 w-8 mx-auto mb-2" />
+                    <p>未找到匹配的智能体</p>
                   </div>
-                ))}
+                )}
               </div>
             </ScrollArea>
           </CardContent>
@@ -209,7 +299,18 @@ const Workspace = () => {
         <Card className="lg:col-span-6 shadow-elegant animate-scale-in">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>智能体对话工作台</CardTitle>
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-primary" />
+                  智能体对话工作台
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {selectedAgents.length > 0 
+                    ? `已选择 ${selectedAgents.length} 个智能体` 
+                    : '请先选择智能体开始对话'
+                  }
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -239,9 +340,13 @@ const Workspace = () => {
             <ScrollArea className="h-[400px] p-6">
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
-                  <Sparkles className="h-16 w-16 text-primary/20 mb-4" />
-                  <p className="text-muted-foreground mb-4">
-                    选择智能体后开始对话，输入您的创作需求...
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-primary/10 blur-xl rounded-full"></div>
+                    <Sparkles className="h-16 w-16 text-primary relative z-10" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">开始您的AI创作之旅</h3>
+                  <p className="text-muted-foreground mb-6 max-w-md">
+                    选择智能体后开始对话，输入您的创作需求，AI将为您提供专业的创作支持
                   </p>
                   {selectedAgents.length > 0 && (
                     <div className="flex flex-wrap gap-2 justify-center">
@@ -253,6 +358,27 @@ const Workspace = () => {
                           </Badge>
                         ) : null;
                       })}
+                    </div>
+                  )}
+                  {selectedAgents.length === 0 && (
+                    <div className="text-center">
+                      <p className="text-sm text-muted-foreground mb-4">
+                        请从左侧选择智能体开始对话
+                      </p>
+                      <div className="flex gap-2 justify-center">
+                        <Button size="sm" variant="outline">
+                          <FileText className="h-4 w-4 mr-1" />
+                          创作助手
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Star className="h-4 w-4 mr-1" />
+                          评估分析
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Zap className="h-4 w-4 mr-1" />
+                          工作流
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
@@ -422,67 +548,96 @@ const Workspace = () => {
           </CardContent>
         </Card>
 
-        {/* Right Sidebar - Results */}
-        <Card className="lg:col-span-3 shadow-elegant animate-fade-in" style={{ animationDelay: "100ms" }}>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>分析结果</CardTitle>
-              <div className="flex gap-1">
-                <Button size="icon" variant="ghost">
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-                <Button size="icon" variant="ghost">
-                  <Download className="h-4 w-4" />
-                </Button>
+        {/* Right Sidebar - System Status and Results */}
+        <div className="lg:col-span-3 space-y-6">
+          {/* 系统状态 */}
+          <SystemStatus />
+          
+          {/* 分析结果 */}
+          <Card className="shadow-elegant animate-fade-in" style={{ animationDelay: "100ms" }}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle>分析结果</CardTitle>
+                <div className="flex gap-1">
+                  <Button size="icon" variant="ghost">
+                    <RefreshCw className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost">
+                    <Download className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[600px]">
-              {messages.filter(m => m.role === "assistant").length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center p-6">
-                  <div className="w-24 h-24 mb-4 opacity-20">
-                    <svg viewBox="0 0 100 100" className="w-full h-full text-muted-foreground">
-                      <rect x="20" y="20" width="60" height="60" rx="8" fill="none" stroke="currentColor" strokeWidth="2"/>
-                      <line x1="30" y1="35" x2="70" y2="35" stroke="currentColor" strokeWidth="2"/>
-                      <line x1="30" y1="50" x2="70" y2="50" stroke="currentColor" strokeWidth="2"/>
-                      <line x1="30" y1="65" x2="55" y2="65" stroke="currentColor" strokeWidth="2"/>
-                    </svg>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-[400px]">
+                {messages.filter(m => m.role === "assistant").length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                    <div className="w-24 h-24 mb-4 opacity-20">
+                      <svg viewBox="0 0 100 100" className="w-full h-full text-muted-foreground">
+                        <rect x="20" y="20" width="60" height="60" rx="8" fill="none" stroke="currentColor" strokeWidth="2"/>
+                        <line x1="30" y1="35" x2="70" y2="35" stroke="currentColor" strokeWidth="2"/>
+                        <line x1="30" y1="50" x2="70" y2="50" stroke="currentColor" strokeWidth="2"/>
+                        <line x1="30" y1="65" x2="55" y2="65" stroke="currentColor" strokeWidth="2"/>
+                      </svg>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      暂无分析结果
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      开始对话后，AI的回复将显示在这里
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    暂无分析结果
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    请在左侧输入故事内容并选择分析类型
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {messages.filter(m => m.role === "assistant").map((msg, idx) => (
-                    <Card key={idx} className="border-primary/20">
-                      <CardContent className="p-4">
-                        <div className="text-sm whitespace-pre-wrap">
-                          {msg.content}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                  <div className="flex gap-2 pt-4">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <Save className="h-4 w-4 mr-1" />
-                      保存
-                    </Button>
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <Download className="h-4 w-4 mr-1" />
-                      导出
-                    </Button>
+                ) : (
+                  <div className="space-y-4">
+                    {messages.filter(m => m.role === "assistant").map((msg, idx) => (
+                      <Card key={idx} className="border-primary/20">
+                        <CardContent className="p-4">
+                          <div className="text-sm whitespace-pre-wrap">
+                            {msg.content}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                    <div className="flex gap-2 pt-4">
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <Save className="h-4 w-4 mr-1" />
+                        保存
+                      </Button>
+                      <Button size="sm" variant="outline" className="flex-1">
+                        <Download className="h-4 w-4 mr-1" />
+                        导出
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+                )}
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        </div>
       </div>
+
+      {/* Agent Details Dialog */}
+      {showAgentDetails && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="max-w-4xl w-full max-h-[90vh] overflow-auto">
+            <AgentDetails
+              agent={agents.find(a => a.id === showAgentDetails)!}
+              onChat={() => {
+                const agent = agents.find(a => a.id === showAgentDetails);
+                if (agent && !selectedAgents.includes(agent.id)) {
+                  setSelectedAgents([...selectedAgents, agent.id]);
+                }
+                setShowAgentDetails(null);
+              }}
+              onTest={() => {
+                console.log("Test agent:", showAgentDetails);
+                setShowAgentDetails(null);
+              }}
+              onClose={() => setShowAgentDetails(null)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Session Manager Sidebar */}
       {showSessionManager && (

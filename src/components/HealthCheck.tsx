@@ -58,14 +58,13 @@ const HealthCheck: React.FC = () => {
       const apiHealth = await checkApiHealth();
       
       // 获取性能指标
-      const performanceStats = performanceMonitor.getStats();
-      const performanceReport = performanceMonitor.generateReport();
+      const performanceStats = performanceMonitor.getPerformanceStats();
       
       // 获取错误统计
       const errorStats = errorHandler.getErrorStats();
       
       // 计算整体健康状态
-      const overallStatus = calculateOverallStatus(apiHealth, performanceReport, errorStats);
+      const overallStatus = calculateOverallStatus(apiHealth, performanceStats, errorStats);
       
       const status: HealthStatus = {
         overall: overallStatus,
@@ -77,8 +76,8 @@ const HealthCheck: React.FC = () => {
             lastChecked: new Date().toISOString()
           },
           performance: {
-            status: performanceReport.summary.averageResponseTime > 2000 ? 'warning' : 'healthy',
-            message: `平均响应时间: ${performanceReport.summary.averageResponseTime.toFixed(0)}ms`,
+            status: performanceStats.averageResponseTime > 2000 ? 'warning' : 'healthy',
+            message: `平均响应时间: ${performanceStats.averageResponseTime.toFixed(0)}ms`,
             lastChecked: new Date().toISOString()
           },
           errors: {
@@ -88,9 +87,9 @@ const HealthCheck: React.FC = () => {
           }
         },
         metrics: {
-          responseTime: performanceReport.summary.averageResponseTime,
-          errorRate: performanceReport.summary.errorRate,
-          memoryUsage: performanceReport.summary.memoryUsage,
+          responseTime: performanceStats.averageResponseTime,
+          errorRate: performanceStats.errorRate / 100,
+          memoryUsage: 0, // 简化实现
           uptime: Date.now() - performance.now()
         },
         lastChecked: new Date().toISOString()
@@ -126,16 +125,16 @@ const HealthCheck: React.FC = () => {
 
   const calculateOverallStatus = (
     apiHealth: ServiceStatus,
-    performanceReport: any,
+    performanceStats: any,
     errorStats: any
   ): 'healthy' | 'warning' | 'critical' => {
     if (apiHealth.status === 'critical') return 'critical';
-    if (performanceReport.summary.errorRate > 0.1) return 'critical';
-    if (performanceReport.summary.averageResponseTime > 5000) return 'critical';
+    if (performanceStats.errorRate > 10) return 'critical';
+    if (performanceStats.averageResponseTime > 5000) return 'critical';
     
     if (apiHealth.status === 'warning') return 'warning';
-    if (performanceReport.summary.errorRate > 0.05) return 'warning';
-    if (performanceReport.summary.averageResponseTime > 2000) return 'warning';
+    if (performanceStats.errorRate > 5) return 'warning';
+    if (performanceStats.averageResponseTime > 2000) return 'warning';
     
     return 'healthy';
   };

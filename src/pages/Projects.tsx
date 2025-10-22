@@ -50,7 +50,7 @@ const Projects = () => {
       <div className="mb-8 animate-fade-in-up">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-4xl font-bold mb-2 gradient-primary bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold mb-2 text-foreground">
               我的项目
             </h1>
             <p className="text-muted-foreground">管理和组织您的所有创作项目</p>

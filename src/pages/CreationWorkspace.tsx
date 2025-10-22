@@ -20,10 +20,12 @@ import {
 import { agents, agentCategories } from '@/data/agents';
 import ChatInterface from '@/components/ChatInterface';
 import AgentCard from '@/components/AgentCard';
+import AgentDetailModal from '@/components/AgentDetailModal';
 
 const CreationWorkspace: React.FC = () => {
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('creation');
 
   const creationAgents = agents.filter(agent => agent.category === 'creation');
@@ -37,6 +39,17 @@ const CreationWorkspace: React.FC = () => {
 
   const handleCloseChat = () => {
     setIsChatOpen(false);
+    setSelectedAgent(null);
+  };
+
+  const handleDetail = (agent: any) => {
+    console.log("创作工作台 - handleDetail被调用，智能体:", agent);
+    setSelectedAgent(agent);
+    setIsDetailOpen(true);
+  };
+
+  const handleCloseDetail = () => {
+    setIsDetailOpen(false);
     setSelectedAgent(null);
   };
 
@@ -139,7 +152,7 @@ const CreationWorkspace: React.FC = () => {
                   agent={agent}
                   onChat={() => handleChat(agent)}
                   onTest={() => console.log('Test', agent.id)}
-                  onDetail={() => console.log('Detail', agent.id)}
+                  onDetail={() => handleDetail(agent)}
                 />
               ))}
             </div>
@@ -153,7 +166,7 @@ const CreationWorkspace: React.FC = () => {
                   agent={agent}
                   onChat={() => handleChat(agent)}
                   onTest={() => console.log('Test', agent.id)}
-                  onDetail={() => console.log('Detail', agent.id)}
+                  onDetail={() => handleDetail(agent)}
                 />
               ))}
             </div>
@@ -167,7 +180,7 @@ const CreationWorkspace: React.FC = () => {
                   agent={agent}
                   onChat={() => handleChat(agent)}
                   onTest={() => console.log('Test', agent.id)}
-                  onDetail={() => console.log('Detail', agent.id)}
+                  onDetail={() => handleDetail(agent)}
                 />
               ))}
             </div>
@@ -190,6 +203,17 @@ const CreationWorkspace: React.FC = () => {
             )}
           </DialogContent>
         </Dialog>
+
+        {/* 智能体详情模态框 */}
+        <AgentDetailModal
+          agent={selectedAgent}
+          isOpen={isDetailOpen}
+          onClose={handleCloseDetail}
+          onChat={() => {
+            handleCloseDetail();
+            handleChat(selectedAgent);
+          }}
+        />
       </div>
     </div>
   );

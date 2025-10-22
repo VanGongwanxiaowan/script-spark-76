@@ -81,6 +81,9 @@ class JuBenAPIService {
     this.baseURL = (import.meta as any).env?.VITE_API_BASE_URL || 'http://localhost:8000';
     this.userId = this.getOrCreateUserId();
     this.sessionId = this.getOrCreateSessionId();
+    
+    // 验证API连接
+    this.verifyConnection();
   }
 
   private getOrCreateUserId(): string {
@@ -99,6 +102,26 @@ class JuBenAPIService {
       localStorage.setItem('juben_session_id', sessionId);
     }
     return sessionId;
+  }
+
+  /**
+   * 验证API连接
+   */
+  private async verifyConnection(): Promise<void> {
+    try {
+      const response = await fetch(`${this.baseURL}/juben/health`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        console.warn('API连接验证失败:', response.status);
+      }
+    } catch (error) {
+      console.warn('API连接验证失败:', error);
+    }
   }
 
   /**
@@ -205,7 +228,20 @@ class JuBenAPIService {
       }
 
       if (!response.ok) {
-        throw new Error(`API请求失败: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        let errorMessage = `API请求失败: ${response.status} ${response.statusText}`;
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // 如果不是JSON格式，使用原始错误文本
+          if (errorText) {
+            errorMessage = errorText;
+          }
+        }
+        
+        throw new Error(errorMessage);
       }
 
       if (!response.body) {

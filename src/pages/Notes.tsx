@@ -37,11 +37,11 @@ const Notes = () => {
   ];
 
   return (
-    <div className="container py-8">
+    <div className="container py-8 notes-page">
       <div className="mb-8 animate-fade-in-up">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-4xl font-bold mb-2 gradient-primary bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold mb-2 notes-title">
               我的笔记
             </h1>
             <p className="text-muted-foreground">记录创作过程中的灵感和想法</p>
@@ -74,10 +74,10 @@ const Notes = () => {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg mb-2 group-hover:text-primary transition-colors">
+                  <CardTitle className="text-lg mb-2 notes-card-title group-hover:text-primary transition-colors">
                     {note.title}
                   </CardTitle>
-                  <CardDescription className="line-clamp-2">
+                  <CardDescription className="line-clamp-2 notes-card-description">
                     {note.content}
                   </CardDescription>
                 </div>
@@ -105,7 +105,7 @@ const Notes = () => {
                 </div>
 
                 <div className="flex gap-2 pt-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button size="sm" variant="ghost" className="flex-1">
+                  <Button size="sm" variant="ghost" className="flex-1 notes-button">
                     <Edit className="h-3 w-3 mr-1" />
                     编辑
                   </Button>
@@ -122,7 +122,7 @@ const Notes = () => {
         <Card className="border-dashed border-2 hover-lift cursor-pointer animate-fade-in-up" style={{ animationDelay: "300ms" }}>
           <CardContent className="flex flex-col items-center justify-center h-full min-h-[250px] text-center p-6">
             <Plus className="h-12 w-12 text-primary/30 mb-4" />
-            <p className="text-sm font-medium mb-1">创建新笔记</p>
+            <p className="text-sm font-medium mb-1 notes-button">创建新笔记</p>
             <p className="text-xs text-muted-foreground">
               记录您的创作灵感
             </p>

@@ -62,7 +62,12 @@ const AgentCard = ({ agent, onChat, onTest, onDetail }: AgentCardProps) => {
           size="sm" 
           variant="ghost"
           className="flex-1"
-          onClick={onDetail}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log("详情按钮被点击，智能体:", agent);
+            onDetail?.();
+          }}
         >
           <Info className="h-4 w-4 mr-1" />
           详情

@@ -12,7 +12,7 @@ const Settings = () => {
   return (
     <div className="container py-8 max-w-4xl">
       <div className="mb-8 animate-fade-in-up">
-        <h1 className="text-4xl font-bold mb-2 gradient-primary bg-clip-text text-transparent">
+        <h1 className="text-4xl font-bold mb-2 text-foreground">
           个人设置
         </h1>
         <p className="text-muted-foreground">管理您的账户设置和偏好</p>
