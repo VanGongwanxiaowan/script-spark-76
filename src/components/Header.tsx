@@ -1,12 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Home, Briefcase, FileText, BookOpen, Workflow, Settings, User } from "lucide-react";
+import { Sparkles, Home, Briefcase, FileText, BookOpen, Workflow, Settings, User, PenTool } from "lucide-react";
 
 const Header = () => {
   const location = useLocation();
   
   const navItems = [
     { path: "/", label: "首页", icon: Home },
+    { path: "/creation", label: "创作工作台", icon: PenTool },
     { path: "/workspace", label: "工作区", icon: Sparkles },
     { path: "/projects", label: "我的项目", icon: Briefcase },
     { path: "/notes", label: "我的笔记", icon: FileText },
@@ -25,7 +26,7 @@ const Header = () => {
             <Sparkles className="h-8 w-8 text-primary relative z-10 transition-transform group-hover:scale-110" />
           </div>
           <span className="text-xl font-bold gradient-primary bg-clip-text text-transparent">
-            AI影视创作工坊
+            AI编剧创作工坊
           </span>
         </Link>
 

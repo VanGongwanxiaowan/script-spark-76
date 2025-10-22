@@ -2,23 +2,37 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Sparkles, ArrowRight, TrendingUp, Users, Zap, Award } from "lucide-react";
 import { agents, agentCategories } from "@/data/agents";
 import AgentCard from "@/components/AgentCard";
+import ChatInterface from "@/components/ChatInterface";
 import { Link } from "react-router-dom";
 
 const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [isChatOpen, setIsChatOpen] = useState(false);
 
   const filteredAgents = selectedCategory === "all" 
     ? agents 
     : agents.filter(agent => agent.category === selectedCategory);
 
+  const handleChat = (agent: any) => {
+    setSelectedAgent(agent);
+    setIsChatOpen(true);
+  };
+
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
+    setSelectedAgent(null);
+  };
+
   const stats = [
-    { label: "总智能体数", value: "30", icon: Sparkles, color: "hsl(0 86% 60%)" },
+    { label: "总智能体数", value: agents.length.toString(), icon: Sparkles, color: "hsl(0 86% 60%)" },
     { label: "活跃智能体", value: agents.filter(a => a.isOnline).length.toString(), icon: TrendingUp, color: "hsl(140 86% 50%)" },
-    { label: "专业分类", value: "7", icon: Award, color: "hsl(220 86% 60%)" },
-    { label: "总使用次数", value: "0", icon: Users, color: "hsl(280 86% 60%)" },
+    { label: "专业分类", value: agentCategories.length.toString(), icon: Award, color: "hsl(220 86% 60%)" },
+    { label: "总使用次数", value: agents.reduce((sum, agent) => sum + agent.usageCount, 0).toString(), icon: Users, color: "hsl(280 86% 60%)" },
   ];
 
   return (
@@ -36,17 +50,17 @@ const Index = () => {
             
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
               <span className="gradient-primary bg-clip-text text-transparent">
-                AI影视创作工坊
+                AI编剧创作工坊
               </span>
             </h1>
             
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 leading-relaxed">
-              基于AI Agents实现影视创作策划和评估<br/>
-              30个专业智能体，助力您的创作之旅
+              基于AI Agents的智能剧本创作平台<br/>
+              {agents.length}个专业智能体，助力您的创作之旅
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/workspace">
+              <Link to="/creation">
                 <Button size="lg" className="gradient-primary text-lg px-8 hover-glow">
                   开始创作
                   <ArrowRight className="ml-2 h-5 w-5" />
@@ -113,8 +127,8 @@ const Index = () => {
               <div key={agent.id} style={{ animationDelay: `${(idx % 12) * 50}ms` }}>
                 <AgentCard
                   agent={agent}
+                  onChat={() => handleChat(agent)}
                   onTest={() => console.log("Test", agent.id)}
-                  onToggle={() => console.log("Toggle", agent.id)}
                   onDetail={() => console.log("Detail", agent.id)}
                 />
               </div>
@@ -129,12 +143,12 @@ const Index = () => {
         
         <div className="container relative z-10 text-center">
           <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
-            开启您的AI创作之旅
+            开启您的AI编剧创作之旅
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-            立即体验30个专业智能体的强大能力，让AI助力您的影视创作
+            立即体验{agents.length}个专业智能体的强大能力，让AI助力您的剧本创作
           </p>
-          <Link to="/workspace">
+          <Link to="/creation">
             <Button size="lg" variant="secondary" className="text-lg px-8 hover-lift">
               立即开始
               <Sparkles className="ml-2 h-5 w-5" />
@@ -142,6 +156,23 @@ const Index = () => {
           </Link>
         </div>
       </section>
+
+      {/* 聊天对话框 */}
+      <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
+        <DialogContent className="max-w-4xl h-[80vh] p-0">
+          <DialogHeader className="p-6 pb-0">
+            <DialogTitle>与 {selectedAgent?.name} 对话</DialogTitle>
+          </DialogHeader>
+          {selectedAgent && (
+            <div className="flex-1 overflow-hidden">
+              <ChatInterface 
+                agent={selectedAgent} 
+                onClose={handleCloseChat}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

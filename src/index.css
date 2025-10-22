@@ -199,4 +199,121 @@ All colors MUST be HSL.
   .hover-glow:hover {
     box-shadow: var(--shadow-glow);
   }
+  
+  /* 剧本创作主题样式 */
+  .script-theme {
+    background: linear-gradient(135deg, hsl(220 86% 60%) 0%, hsl(280 86% 60%) 100%);
+  }
+  
+  .creation-gradient {
+    background: linear-gradient(135deg, hsl(0 86% 60%) 0%, hsl(15 90% 65%) 50%, hsl(220 86% 60%) 100%);
+  }
+  
+  .evaluation-gradient {
+    background: linear-gradient(135deg, hsl(220 86% 60%) 0%, hsl(280 86% 60%) 100%);
+  }
+  
+  .workflow-gradient {
+    background: linear-gradient(135deg, hsl(140 86% 50%) 0%, hsl(180 86% 50%) 100%);
+  }
+  
+  /* 动画效果 */
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.4s ease-out;
+  }
+  
+  .animate-pulse-glow {
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+  
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  
+  @keyframes pulseGlow {
+    0%, 100% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+  
+  /* 文本截断 */
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  /* 生产级别优化 */
+  .optimize-rendering {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+  }
+  
+  .smooth-scroll {
+    scroll-behavior: smooth;
+  }
+  
+  /* 响应式设计优化 */
+  @media (max-width: 768px) {
+    .mobile-optimized {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+  }
+  
+  /* 可访问性改进 */
+  .focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+  }
+  
+  /* 加载状态优化 */
+  .loading-skeleton {
+    background: linear-gradient(90deg, hsl(var(--muted)) 25%, hsl(var(--muted) / 0.5) 50%, hsl(var(--muted)) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+  
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
 }

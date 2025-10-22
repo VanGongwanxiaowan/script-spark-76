@@ -1,23 +1,24 @@
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Info, Play, ToggleLeft } from "lucide-react";
+import { Info, Play, MessageCircle, Zap } from "lucide-react";
 import { Agent } from "@/data/agents";
 
 interface AgentCardProps {
   agent: Agent;
+  onChat?: () => void;
   onTest?: () => void;
-  onToggle?: () => void;
   onDetail?: () => void;
 }
 
-const AgentCard = ({ agent, onTest, onToggle, onDetail }: AgentCardProps) => {
+const AgentCard = ({ agent, onChat, onTest, onDetail }: AgentCardProps) => {
   return (
     <Card className="group hover-lift shadow-elegant animate-fade-in-up">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
+              <div className="text-2xl">{agent.icon}</div>
               <Badge 
                 variant={agent.isOnline ? "default" : "secondary"}
                 className="transition-all"
@@ -69,18 +70,20 @@ const AgentCard = ({ agent, onTest, onToggle, onDetail }: AgentCardProps) => {
         <Button 
           size="sm" 
           className="flex-1 gradient-primary"
-          onClick={onTest}
+          onClick={onChat}
+          disabled={!agent.isOnline}
         >
-          <Play className="h-4 w-4 mr-1" />
-          测试
+          <MessageCircle className="h-4 w-4 mr-1" />
+          对话
         </Button>
         <Button 
           size="sm" 
           variant="outline"
-          onClick={onToggle}
+          onClick={onTest}
+          disabled={!agent.isOnline}
         >
-          <ToggleLeft className="h-4 w-4" />
-          切换
+          <Zap className="h-4 w-4 mr-1" />
+          快速
         </Button>
       </CardFooter>
     </Card>

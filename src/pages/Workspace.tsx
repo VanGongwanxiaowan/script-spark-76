@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,9 +9,21 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { 
   Send, Upload, Download, Save, RefreshCw, History, 
-  Wifi, Database, Sparkles, Plus, X, ChevronLeft, ChevronRight 
+  Wifi, Database, Sparkles, Plus, X, ChevronLeft, ChevronRight, Loader2, Bot, User
 } from "lucide-react";
 import { agents } from "@/data/agents";
+import { apiService, StreamEvent } from "@/services/api";
+import { handleApiError, handleNetworkError, getUserFriendlyMessage } from "@/utils/errorHandler";
+import { LoadingSkeleton } from "@/components/ui/skeleton";
+
+interface Message {
+  id: string;
+  role: string;
+  content: string;
+  agent?: string;
+  timestamp: Date;
+  isStreaming?: boolean;
+}
 
 const Workspace = () => {
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
@@ -19,7 +31,10 @@ const Workspace = () => {
   const [useKnowledge, setUseKnowledge] = useState(false);
   const [showSessionManager, setShowSessionManager] = useState(false);
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Array<{ role: string; content: string; agent?: string }>>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentStreamMessage, setCurrentStreamMessage] = useState<string>('');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const toggleAgent = (agentId: string) => {
     setSelectedAgents(prev => 
@@ -29,24 +44,115 @@ const Workspace = () => {
     );
   };
 
-  const handleSend = () => {
-    if (!input.trim()) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, currentStreamMessage]);
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading || selectedAgents.length === 0) return;
     
-    setMessages(prev => [...prev, { 
-      role: "user", 
-      content: input 
-    }]);
-    
-    // 模拟AI响应
-    setTimeout(() => {
-      setMessages(prev => [...prev, {
+    const userMessage: Message = {
+      id: `user_${Date.now()}`,
+      role: "user",
+      content: input.trim(),
+      timestamp: new Date()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    const currentInput = input.trim();
+    setInput('');
+    setIsLoading(true);
+    setCurrentStreamMessage('');
+
+    try {
+      // 使用第一个选中的智能体进行对话
+      const agentId = selectedAgents[0];
+      const stream = await apiService.sendChatRequest(
+        agentId,
+        currentInput,
+        {
+          theme: '竖屏短剧',
+          work_type: '短剧'
+        }
+      );
+
+      const reader = stream.getReader();
+      let assistantMessageId = `assistant_${Date.now()}`;
+      let fullContent = '';
+      let hasError = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) break;
+
+        // 处理不同类型的流式事件
+        if (value.type === 'content' || value.type === 'text' || value.type === 'llm_chunk') {
+          fullContent += value.content;
+          setCurrentStreamMessage(fullContent);
+        } else if (value.type === 'done' || value.type === 'complete') {
+          // 流式传输完成，保存最终消息
+          const assistantMessage: Message = {
+            id: assistantMessageId,
+            role: "assistant",
+            content: fullContent,
+            timestamp: new Date(),
+            agent: agents.find(a => a.id === agentId)?.name || "AI"
+          };
+          
+          setMessages(prev => [...prev, assistantMessage]);
+          setCurrentStreamMessage('');
+          break;
+        } else if (value.type === 'error') {
+          hasError = true;
+          const errorMessage: Message = {
+            id: `error_${Date.now()}`,
+            role: "assistant",
+            content: `系统错误：${value.content}`,
+            timestamp: new Date(),
+            agent: agents.find(a => a.id === agentId)?.name || "AI"
+          };
+          setMessages(prev => [...prev, errorMessage]);
+          break;
+        }
+      }
+
+      // 如果没有收到完成信号但有内容，也要保存
+      if (!hasError && fullContent && !messages.some(m => m.id === assistantMessageId)) {
+        const assistantMessage: Message = {
+          id: assistantMessageId,
+          role: "assistant",
+          content: fullContent,
+          timestamp: new Date(),
+          agent: agents.find(a => a.id === agentId)?.name || "AI"
+        };
+        setMessages(prev => [...prev, assistantMessage]);
+      }
+
+    } catch (error) {
+      console.error('发送消息失败:', error);
+      
+      // 使用统一的错误处理
+      const errorInfo = error instanceof Error && error.message.includes('fetch')
+        ? handleNetworkError(error, { agent: selectedAgents[0], query: currentInput })
+        : handleApiError(error, { agent: selectedAgents[0], query: currentInput });
+      
+      const errorMessage: Message = {
+        id: `error_${Date.now()}`,
         role: "assistant",
-        content: "这是AI的回复示例。实际使用时，这里会连接真实的AI服务。",
-        agent: selectedAgents[0] || "system"
-      }]);
-    }, 1000);
-    
-    setInput("");
+        content: getUserFriendlyMessage(errorInfo),
+        timestamp: new Date(),
+        agent: "系统"
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+      setCurrentStreamMessage('');
+    }
   };
 
   return (
@@ -103,7 +209,7 @@ const Workspace = () => {
         <Card className="lg:col-span-6 shadow-elegant animate-scale-in">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>故事内容输入</CardTitle>
+              <CardTitle>智能体对话工作台</CardTitle>
               <div className="flex gap-2">
                 <Button
                   variant="outline"
@@ -134,15 +240,27 @@ const Workspace = () => {
               {messages.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full text-center">
                   <Sparkles className="h-16 w-16 text-primary/20 mb-4" />
-                  <p className="text-muted-foreground">
-                    请输入要分析的故事内容、剧本大纲、角色设定等...
+                  <p className="text-muted-foreground mb-4">
+                    选择智能体后开始对话，输入您的创作需求...
                   </p>
+                  {selectedAgents.length > 0 && (
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      {selectedAgents.map(agentId => {
+                        const agent = agents.find(a => a.id === agentId);
+                        return agent ? (
+                          <Badge key={agentId} variant="secondary" className="text-xs">
+                            {agent.icon} {agent.name}
+                          </Badge>
+                        ) : null;
+                      })}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {messages.map((msg, idx) => (
+                  {messages.map((msg) => (
                     <div
-                      key={idx}
+                      key={msg.id}
                       className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                     >
                       <div
@@ -152,15 +270,62 @@ const Workspace = () => {
                             : "bg-muted"
                         }`}
                       >
-                        {msg.agent && (
-                          <div className="text-xs opacity-70 mb-1">
-                            {agents.find(a => a.id === msg.agent)?.name || "AI"}
+                        <div className="flex items-start space-x-2">
+                          {msg.role === "assistant" && (
+                            <div className="flex-shrink-0 mt-1">
+                              <Bot className="h-4 w-4" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            {msg.agent && (
+                              <div className="text-xs opacity-70 mb-1">
+                                {msg.agent}
+                              </div>
+                            )}
+                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            <div className="flex items-center justify-between mt-2 text-xs opacity-70">
+                              <span>
+                                {msg.role === "user" ? (
+                                  <User className="h-3 w-3 inline mr-1" />
+                                ) : (
+                                  <Bot className="h-3 w-3 inline mr-1" />
+                                )}
+                                {msg.role === "user" ? "您" : msg.agent}
+                              </span>
+                              <span>{msg.timestamp.toLocaleTimeString()}</span>
+                            </div>
                           </div>
-                        )}
-                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                          {msg.role === "user" && (
+                            <div className="flex-shrink-0 mt-1">
+                              <User className="h-4 w-4" />
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
+                  
+                  {/* 流式消息显示 */}
+                  {isLoading && currentStreamMessage && (
+                    <div className="flex justify-start">
+                      <div className="max-w-[80%] rounded-lg p-4 bg-muted">
+                        <div className="flex items-start space-x-2">
+                          <div className="flex-shrink-0 mt-1">
+                            <Bot className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm whitespace-pre-wrap">{currentStreamMessage}</p>
+                            <div className="flex items-center mt-2 text-xs opacity-70">
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              <span>AI正在思考...</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div ref={messagesEndRef} />
                 </div>
               )}
             </ScrollArea>
@@ -216,7 +381,7 @@ const Workspace = () => {
               {/* Text Input */}
               <div className="flex gap-2">
                 <Textarea
-                  placeholder="请输入要分析的故事内容、剧本大纲、角色设定等..."
+                  placeholder="请选择智能体后输入您的创作需求..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -240,9 +405,17 @@ const Workspace = () => {
                   清空结果
                 </Button>
                 <div className="flex-1"></div>
-                <Button onClick={handleSend} className="gradient-primary">
-                  <Send className="h-4 w-4 mr-1" />
-                  开始分析
+                <Button 
+                  onClick={handleSend} 
+                  disabled={!input.trim() || isLoading || selectedAgents.length === 0}
+                  className="gradient-primary"
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4 mr-1" />
+                  )}
+                  {selectedAgents.length === 0 ? "请选择智能体" : "发送消息"}
                 </Button>
               </div>
             </div>

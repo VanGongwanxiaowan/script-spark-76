@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Header from "./components/Header";
 import Index from "./pages/Index";
 import Workspace from "./pages/Workspace";
+import CreationWorkspace from "./pages/CreationWorkspace";
 import Projects from "./pages/Projects";
 import Notes from "./pages/Notes";
 import Knowledge from "./pages/Knowledge";
@@ -25,6 +26,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/workspace" element={<Workspace />} />
+          <Route path="/creation" element={<CreationWorkspace />} />
           <Route path="/projects" element={<Projects />} />
           <Route path="/notes" element={<Notes />} />
           <Route path="/knowledge" element={<Knowledge />} />
